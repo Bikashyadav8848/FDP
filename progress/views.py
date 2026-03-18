@@ -28,17 +28,14 @@ def student_progress(request):
     week_start = get_week_start(selected_week)
 
     if request.method == "POST":
-        # Update existing task completion state
-        for key, value in request.POST.items():
-            if key.startswith("task_"):
-                try:
-                    task_id = int(key.split("_", 1)[1])
-                    task = Task.objects.filter(pk=task_id, student=student).first()
-                    if task:
-                        task.is_done = value == "on"
-                        task.save()
-                except Exception:
-                    continue
+        # Update existing task completion state (handle unchecked boxes too)
+        tasks_for_week = Task.objects.filter(student=student, week_start=week_start)
+        for task in tasks_for_week:
+            checkbox_name = f"task_{task.id}"
+            is_checked = checkbox_name in request.POST
+            if task.is_done != is_checked:
+                task.is_done = is_checked
+                task.save()
 
         # Add new task if provided
         new_title = request.POST.get("new_task_title", "").strip()
