@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit{% else %}Create{% endif %} Fee Structure{% endblock %}
+
+{% block content %}
+<style>
+    .form-container { background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); max-width: 700px; margin: 2rem auto; }
+    .form-title { color: #1f2937; margin-bottom: 2rem; text-align: center; }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { font-weight: 600; color: #374151; margin-bottom: 0.5rem; display: block; }
+    .form-control { border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; font-size: 1rem; }
+    .form-control:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .form-select { border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; font-size: 1rem; }
+    .form-select:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    .checkbox-container { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-submit { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; color: white; font-weight: 600; }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); }
+    .btn-cancel { background: #6b7280; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; color: white; font-weight: 600; text-decoration: none; display: inline-block; }
+    .btn-cancel:hover { background: #4b5563; color: white; text-decoration: none; }
+</style>
+
+<div class="form-container">
+    <h2 class="form-title">
+        <i class="fas fa-cog"></i>
+        {% if object %}Edit Fee Structure{% else %}Create New Fee Structure{% endif %}
+    </h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}" class="form-label">
+                <i class="fas fa-signature"></i> Structure Name *
+            </label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <div class="text-danger mt-1">
+                    {% for error in form.name.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="{{ form.category.id_for_label }}" class="form-label">
+                    <i class="fas fa-tag"></i> Fee Category *
+                </label>
+                {{ form.category }}
+            {% if not categories_exist %}
+            <div class="alert alert-warning mt-2">
+                No fee categories found. <a href="{% url 'fee_category_create' %}">Create a new category</a> to continue.
+            </div>
+            {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.class_section.id_for_label }}" class="form-label">
+                    <i class="fas fa-school"></i> Class *
+                </label>
+                {{ form.class_section }}
+                {% if form.class_section.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.class_section.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="{{ form.fee_type.id_for_label }}" class="form-label">
+                    <i class="fas fa-calculator"></i> Fee Type *
+                </label>
+                {{ form.fee_type }}
+                {% if form.fee_type.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.fee_type.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.amount.id_for_label }}" class="form-label">
+                    <i class="fas fa-rupee-sign"></i> Amount (₹) *
+                </label>
+                {{ form.amount }}
+                {% if form.amount.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.amount.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="{{ form.frequency.id_for_label }}" class="form-label">
+                    <i class="fas fa-calendar-alt"></i> Frequency *
+                </label>
+                {{ form.frequency }}
+                {% if form.frequency.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.frequency.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.due_date.id_for_label }}" class="form-label">
+                    <i class="fas fa-calendar-day"></i> Due Date *
+                </label>
+                {{ form.due_date }}
+                {% if form.due_date.errors %}
+                    <div class="text-danger mt-1">
+                        {% for error in form.due_date.errors %}
+                            <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="checkbox-container">
+                {{ form.is_active }}
+                <label for="{{ form.is_active.id_for_label }}" class="form-label mb-0">
+                    <i class="fas fa-toggle-on"></i> Active Structure
+                </label>
+            </div>
+            {% if form.is_active.errors %}
+                <div class="text-danger mt-1">
+                    {% for error in form.is_active.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="d-flex gap-3 justify-content-center mt-4">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save"></i> {% if object %}Update{% else %}Create{% endif %} Structure
+            </button>
+            <a href="{% url 'fee_structures' %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Add Bootstrap classes to form fields
+document.addEventListener('DOMContentLoaded', function() {
+    const formControls = document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea');
+    formControls.forEach(control => {
+        control.classList.add('form-control');
+    });
+
+    const selectControls = document.querySelectorAll('select');
+    selectControls.forEach(control => {
+        control.classList.add('form-select');
+    });
+});
+</script>
+{% endblock %}

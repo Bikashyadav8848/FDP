@@ -3,4 +3,5 @@ from .models import Student
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'roll_number']
+    list_display = ['roll_number', 'name', 'email']
+    ordering = ['roll_number']

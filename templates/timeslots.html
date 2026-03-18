@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Time Slots{% endblock %}
+
+{% block content %}
+<style>
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .empty-state { text-align: center; padding: 3rem; background: white; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .empty-state-icon { font-size: 3rem; color: #d1d5db; margin-bottom: 1rem; }
+</style>
+
+<div class="action-bar">
+    <h2><i class="fas fa-clock"></i> Time Slots</h2>
+    <a href="{% url 'timeslot_add' %}" class="btn btn-success"><i class="fas fa-plus"></i> Add Time Slot</a>
+</div>
+
+{% if timeslots %}
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th><i class="fas fa-clock"></i> Period Name</th>
+                <th><i class="fas fa-hourglass-start"></i> Start Time</th>
+                <th><i class="fas fa-hourglass-end"></i> End Time</th>
+                <th><i class="fas fa-cog"></i> Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for timeslot in timeslots %}
+            <tr>
+                <td><strong>{{ timeslot.period_name }}</strong></td>
+                <td>{{ timeslot.start_time|time:"H:i" }}</td>
+                <td>{{ timeslot.end_time|time:"H:i" }}</td>
+                <td>
+                    <a href="{% url 'timeslot_edit' timeslot.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-edit"></i></a>
+                    <a href="{% url 'timeslot_delete' timeslot.pk %}" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon"><i class="fas fa-clock"></i></div>
+    <p>No time slots found. Start by adding time slots for your timetable.</p>
+    <a href="{% url 'timeslot_add' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add First Time Slot</a>
+</div>
+{% endif %}
+{% endblock %}

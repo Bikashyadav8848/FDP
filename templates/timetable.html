@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}Timetable{% endblock %}
+
+{% block content %}
+<style>
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .filter-section { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-bottom: 2rem; }
+    .timetable-container { background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .timetable-table { width: 100%; border-collapse: collapse; }
+    .time-header { background: #f8fafc; font-weight: 700; color: #1f2937; text-align: center; padding: 1rem; border: 2px solid #e5e7eb; min-width: 120px; }
+    .day-header { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; padding: 1rem; text-align: center; font-weight: 600; border: 2px solid #e5e7eb; }
+    .timetable-cell { border: 2px solid #e5e7eb; padding: 0.5rem; min-height: 100px; vertical-align: top; position: relative; }
+    .entry-card { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; border: 2px solid #0ea5e9; position: relative; }
+    .entry-card:last-child { margin-bottom: 0; }
+    .entry-subject { font-weight: 700; color: #0c4a6e; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    .entry-teacher { color: #0369a1; font-size: 0.8rem; font-weight: 500; }
+    .entry-room { color: #0284c7; font-size: 0.75rem; font-weight: 600; background: rgba(3, 105, 161, 0.1); padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block; margin-top: 0.25rem; }
+    .empty-cell { color: #9ca3af; font-style: italic; text-align: center; padding: 2rem 0.5rem; font-size: 0.85rem; }
+    .cell-actions { position: absolute; top: 0.25rem; right: 0.25rem; opacity: 0; transition: opacity 0.3s ease; }
+    .timetable-cell:hover .cell-actions { opacity: 1; }
+    .cell-actions .btn { padding: 0.25rem 0.5rem; font-size: 0.7rem; line-height: 1; }
+    .time-display { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
+    .period-name { font-size: 0.9rem; color: #374151; font-weight: 600; }
+</style>
+
+<div class="action-bar">
+    <h2><i class="fas fa-calendar-week"></i> Weekly Timetable</h2>
+    <div>
+        <a href="{% url 'timetable_add' %}" class="btn btn-success"><i class="fas fa-plus"></i> Add Class</a>
+        <a href="{% url 'timeslots' %}" class="btn btn-info"><i class="fas fa-clock"></i> Manage Periods</a>
+    </div>
+</div>
+
+<div class="filter-section">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="class" class="form-label"><i class="fas fa-filter"></i> Select Class:</label>
+            <select name="class" id="class" class="form-select">
+                <option value="">All Classes</option>
+                {% for class_obj in classes %}
+                <option value="{{ class_obj.id }}" {% if request.GET.class == class_obj.id|stringformat:"s" %}selected{% endif %}>
+                    {{ class_obj }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Show Timetable</button>
+            <a href="{% url 'timetable' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear</a>
+        </div>
+    </form>
+</div>
+
+{% if time_slots %}
+<div class="timetable-container">
+    <table class="timetable-table">
+        <thead>
+            <tr>
+                <th class="time-header"><i class="fas fa-clock"></i> Time</th>
+                <th class="day-header"><i class="fas fa-sun"></i> Monday</th>
+                <th class="day-header"><i class="fas fa-cloud-sun"></i> Tuesday</th>
+                <th class="day-header"><i class="fas fa-cloud"></i> Wednesday</th>
+                <th class="day-header"><i class="fas fa-cloud-rain"></i> Thursday</th>
+                <th class="day-header"><i class="fas fa-bolt"></i> Friday</th>
+                <th class="day-header"><i class="fas fa-moon"></i> Saturday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for time_slot in time_slots %}
+            <tr>
+                <td class="time-header">
+                    <div class="period-name">{{ time_slot.period_name }}</div>
+                    <div class="time-display">{{ time_slot.start_time|time:"H:i" }} - {{ time_slot.end_time|time:"H:i" }}</div>
+                </td>
+                {% for day in days %}
+                <td class="timetable-cell">
+                    {% for entry in timetable_entries %}
+                        {% if entry.time_slot.id == time_slot.id and entry.day_of_week == day %}
+                        <div class="entry-card">
+                            <div class="entry-subject">{{ entry.subject.name }}</div>
+                            <div class="entry-teacher"><i class="fas fa-user-tie"></i> {{ entry.teacher.name }}</div>
+                            {% if entry.room %}
+                            <div class="entry-room"><i class="fas fa-map-marker-alt"></i> {{ entry.room }}</div>
+                            {% endif %}
+                            <div class="cell-actions">
+                                <a href="{% url 'timetable_edit' entry.pk %}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
+                                <a href="{% url 'timetable_delete' entry.pk %}" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% comment %} Check if no entries found for this time slot and day {% endcomment %}
+                    {% if not timetable_entries %}
+                    <div class="empty-cell">No class scheduled</div>
+                    {% else %}
+                        {% for entry in timetable_entries %}
+                            {% if entry.time_slot.id == time_slot.id and entry.day_of_week == day %}
+                                {% comment %} Entry found, don't show empty message {% endcomment %}
+                            {% else %}
+                                {% if forloop.last %}
+                                <div class="empty-cell">No class scheduled</div>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="alert alert-success">
+                <h6><i class="fas fa-info-circle"></i> How to Use:</h6>
+                <ul class="mb-0">
+                    <li>Select a class from the dropdown above</li>
+                    <li>Each cell represents a time slot for that day</li>
+                    <li>Click "Add Class" to schedule subjects</li>
+                    <li>Hover over entries to see edit/delete options</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="alert alert-info">
+                <h6><i class="fas fa-lightbulb"></i> Tips:</h6>
+                <ul class="mb-0">
+                    <li>Each day can have different subjects</li>
+                    <li>Use "Manage Periods" to add/edit time slots</li>
+                    <li>Room information is optional</li>
+                    <li>Filter by class to see specific timetables</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <div style="font-size: 4rem; color: #d1d5db; margin-bottom: 1rem;"><i class="fas fa-calendar-week"></i></div>
+    <h4>No Time Periods Found</h4>
+    <p>You need to create time periods first before creating the timetable.</p>
+    <a href="{% url 'timeslots' %}" class="btn btn-primary btn-lg"><i class="fas fa-clock"></i> Create Time Periods</a>
+</div>
+{% endif %}
+{% endblock %}

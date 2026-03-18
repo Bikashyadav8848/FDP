@@ -42,6 +42,7 @@ urlpatterns = [
     # Attendance
     path('attendance/', views.AttendanceListView.as_view(), name='attendance'),
     path('attendance/add/', views.AttendanceCreateView.as_view(), name='attendance_add'),
+    path('attendance/bulk/', views.bulk_attendance, name='bulk_attendance'),
     path('attendance/<int:pk>/edit/', views.AttendanceUpdateView.as_view(), name='attendance_edit'),
     path('attendance/<int:pk>/delete/', views.AttendanceDeleteView.as_view(), name='attendance_delete'),
     # Marks
@@ -51,4 +52,8 @@ urlpatterns = [
     path('marks/<int:pk>/delete/', views.MarksDeleteView.as_view(), name='marks_delete'),
     # Subjects
     path('subjects/', include('subjects.urls')),
+    # Timetable
+    path('timetable/', include('timetable.urls')),
+    # Fees
+    path('fees/', include('fees.urls')),
 ]

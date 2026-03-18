@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Fees{% endblock %}
+
+{% block content %}
+<style>
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .filter-section { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-bottom: 2rem; }
+    .summary-card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .summary-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .summary-label { color: #6b7280; font-weight: 600; }
+    .summary-value { font-weight: 700; font-size: 1.1rem; }
+    .fee-card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .fee-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+    .fee-title { font-size: 1.25rem; font-weight: 600; }
+    .fee-status { padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 600; font-size: 0.75rem; }
+    .fee-status.pending { background: #fef3c7; color: #92400e; }
+    .fee-status.partially_paid { background: #d1fae5; color: #065f46; }
+    .fee-status.paid { background: #d1fae5; color: #065f46; }
+    .fee-status.overdue { background: #fee2e2; color: #991b1b; }
+    .fee-status.waived { background: #e0f2fe; color: #0369a1; }
+    .fee-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .fee-detail { background: #f9fafb; padding: 0.75rem; border-radius: 0.5rem; }
+    .card-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+</style>
+
+<div class="action-bar">
+    <h2><i class="fas fa-user-graduate"></i> Student Fees</h2>
+    <a href="{% url 'student_fee_create' %}" class="btn btn-success"><i class="fas fa-plus"></i> Add Student Fee</a>
+</div>
+
+<div class="filter-section">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="student" class="form-label"><i class="fas fa-user"></i> Filter by Student:</label>
+            <select name="student" id="student" class="form-select">
+                <option value="">All Students</option>
+                {% for student in students %}
+                <option value="{{ student.id }}" {% if request.GET.student == student.id|stringformat:"s" %}selected{% endif %}>
+                    {{ student.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="class" class="form-label"><i class="fas fa-school"></i> Filter by Class:</label>
+            <select name="class" id="class" class="form-select">
+                <option value="">All Classes</option>
+                {% for class_obj in classes %}
+                <option value="{{ class_obj.id }}" {% if request.GET.class == class_obj.id|stringformat:"s" %}selected{% endif %}>
+                    {{ class_obj }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="status" class="form-label"><i class="fas fa-info-circle"></i> Filter by Status:</label>
+            <select name="status" id="status" class="form-select">
+                <option value="">All Statuses</option>
+                {% for key, label in status_choices %}
+                <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="academic_year" class="form-label"><i class="fas fa-calendar-alt"></i> Academic Year:</label>
+            <select name="academic_year" id="academic_year" class="form-select">
+                <option value="">All Years</option>
+                {% for year in academic_years %}
+                <option value="{{ year }}" {% if request.GET.academic_year == year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
+            <a href="{% url 'student_fees' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="summary-card">
+            <div class="summary-item">
+                <span class="summary-label">Total Fees Assigned</span>
+                <span class="summary-value">₹{{ total_fees|floatformat:0 }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Total Paid</span>
+                <span class="summary-value">₹{{ total_paid|floatformat:0 }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Total Due</span>
+                <span class="summary-value">₹{{ total_due|floatformat:0 }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        {% for fee in student_fees %}
+        <div class="fee-card">
+            <div class="fee-header">
+                <div>
+                    <div class="fee-title">{{ fee.student.name }} - {{ fee.fee_structure.name }}</div>
+                    <div class="text-muted">Academic Year: {{ fee.academic_year }}</div>
+                </div>
+                <div class="fee-status {{ fee.status }}">{{ fee.get_status_display }}</div>
+            </div>
+            <div class="fee-details">
+                <div class="fee-detail">
+                    <div class="text-muted">Total Amount</div>
+                    <div class="fw-bold">₹{{ fee.total_amount|floatformat:0 }}</div>
+                </div>
+                <div class="fee-detail">
+                    <div class="text-muted">Paid Amount</div>
+                    <div class="fw-bold">₹{{ fee.paid_amount|floatformat:0 }}</div>
+                </div>
+                <div class="fee-detail">
+                    <div class="text-muted">Due Amount</div>
+                    <div class="fw-bold">₹{{ fee.due_amount|floatformat:0 }}</div>
+                </div>
+                <div class="fee-detail">
+                    <div class="text-muted">Assigned On</div>
+                    <div class="fw-bold">{{ fee.created_at|date:"M d, Y" }}</div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <a href="{% url 'student_fee_update' fee.pk %}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
+                <a href="{% url 'student_fee_delete' fee.pk %}" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fas fa-trash"></i></a>
+                <a href="{% url 'fee_payment_create' %}?student={{ fee.student.id }}" class="btn btn-sm btn-outline-success" title="Add Payment"><i class="fas fa-credit-card"></i></a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-5">
+            <i class="fas fa-user-clock fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No Student Fees Found</h4>
+            <p class="text-muted">Assign a fee to a student to get started.</p>
+            <a href="{% url 'student_fee_create' %}" class="btn btn-primary">Assign Fee</a>
+        </div>
+        {% endfor %}
+
+        {% if is_paginated %}
+        <div class="d-flex justify-content-center mt-4">
+            <nav>
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

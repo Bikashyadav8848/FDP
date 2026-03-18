@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Attendance Marking{% endblock %}
+
+{% block content %}
+<style>
+    .bulk-container { max-width: 1000px; margin: 2rem auto; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .bulk-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .bulk-title { color: #1f2937; font-size: 1.75rem; }
+    .date-section { background: #f3f4f6; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 2rem; }
+    .date-label { font-weight: 600; color: #374151; margin-bottom: 0.5rem; display: block; }
+    .date-input { border: 2px solid #e5e7eb; border-radius: 0.5rem; padding: 0.75rem; font-size: 1rem; width: 100%; max-width: 300px; background: white; }
+    .date-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); outline: none; }
+    .students-section { margin-bottom: 2rem; }
+    .students-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .students-title { font-weight: 600; color: #374151; font-size: 1.1rem; }
+    .select-controls { display: flex; gap: 0.5rem; }
+    .select-btn { padding: 0.5rem 1rem; border: 1px solid #d1d5db; background: white; border-radius: 0.5rem; cursor: pointer; font-size: 0.9rem; color: #374151; }
+    .select-btn:hover { background: #f3f4f6; }
+    .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .student-card { background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 0.75rem; padding: 1rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: all 0.2s ease; }
+    .student-card:hover { border-color: #8b5cf6; background: #f5f3ff; }
+    .student-card input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #8b5cf6; }
+    .student-card.checked { background: #f0e7ff; border-color: #8b5cf6; }
+    .student-info { flex: 1; }
+    .student-name { font-weight: 600; color: #1f2937; }
+    .student-roll { font-size: 0.85rem; color: #6b7280; }
+    .form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
+    .btn-submit { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer; font-size: 1rem; }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+    .btn-cancel { background: #6b7280; border: none; padding: 0.75rem 2rem; border-radius: 0.5rem; color: white; font-weight: 600; text-decoration: none; display: inline-block; text-align: center; cursor: pointer; font-size: 1rem; }
+    .btn-cancel:hover { background: #4b5563; color: white; text-decoration: none; }
+    .stats-info { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+    .stats-text { color: #92400e; font-size: 0.95rem; }
+    .empty-state { text-align: center; padding: 3rem; color: #6b7280; }
+</style>
+
+<div class="bulk-container">
+    <div class="bulk-header">
+        <h2 class="bulk-title">
+            <i class="fas fa-check-double"></i> Bulk Attendance Marking
+        </h2>
+        <a href="{% url 'attendance' %}" class="btn-cancel">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% if students %}
+    <div class="stats-info">
+        <div class="stats-text">
+            <i class="fas fa-info-circle"></i> Select all students who are <strong>Present</strong> today. 
+            Students not selected will be marked as <strong>Absent</strong>.
+        </div>
+    </div>
+
+    <form method="post" id="attendanceForm">
+        {% csrf_token %}
+
+        <!-- Date Section -->
+        <div class="date-section">
+            <label for="dateInput" class="date-label">
+                <i class="fas fa-calendar"></i> Date
+            </label>
+            <input type="date" id="dateInput" name="date" class="date-input" value="{{ today|date:'Y-m-d' }}" required>
+        </div>
+
+        <!-- Students Section -->
+        <div class="students-section">
+            <div class="students-header">
+                <span class="students-title">
+                    <i class="fas fa-users"></i> Select Present Students
+                    <span style="color: #6b7280; font-weight: 400;">
+                        (Total: {{ students.count }})
+                    </span>
+                </span>
+                <div class="select-controls">
+                    <button type="button" class="select-btn" onclick="selectAll()">
+                        <i class="fas fa-check-all"></i> Select All
+                    </button>
+                    <button type="button" class="select-btn" onclick="deselectAll()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <div class="students-grid">
+                {% for student in students %}
+                <label class="student-card" id="card-{{ student.id }}">
+                    <input type="checkbox" name="present_students" value="{{ student.id }}" 
+                           class="student-checkbox" onchange="toggleCard(this)">
+                    <div class="student-info">
+                        <div class="student-name">
+                            {{ student.name }}
+                        </div>
+                        <div class="student-roll">
+                            <i class="fas fa-id-card"></i> {{ student.roll_number }}
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save"></i> Mark Attendance
+            </button>
+            <a href="{% url 'attendance' %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+
+    {% else %}
+    <div class="empty-state">
+        <div style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;">
+            <i class="fas fa-users"></i>
+        </div>
+        <h4 class="text-muted">No Students Found</h4>
+        <p class="text-muted mb-3">Please add students first before marking attendance.</p>
+        <a href="{% url 'student_add' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Student
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleCard(checkbox) {
+    const card = checkbox.closest('.student-card');
+    if (checkbox.checked) {
+        card.classList.add('checked');
+    } else {
+        card.classList.remove('checked');
+    }
+}
+
+function selectAll() {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = true;
+        toggleCard(cb);
+    });
+}
+
+function deselectAll() {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+        toggleCard(cb);
+    });
+}
+
+// Initialize cards on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            toggleCard(cb);
+        }
+    });
+
+    // Keyboard shortcut: Enter to submit
+    document.getElementById('attendanceForm').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            this.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

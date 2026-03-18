@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Fees Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .stats-card { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+    .stats-card.success { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .stats-card.warning { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
+    .stats-card.danger { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); }
+    .stats-card.info { background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); }
+    .stats-number { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .stats-label { font-size: 0.9rem; opacity: 0.9; }
+    .recent-section { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .payment-item { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+    .payment-item:last-child { border-bottom: none; }
+    .payment-amount { font-weight: 600; color: #10b981; }
+    .payment-date { color: #6b7280; font-size: 0.85rem; }
+    .overdue-item { background: #fef2f2; border-left: 4px solid #ef4444; padding: 1rem; margin-bottom: 0.5rem; border-radius: 0.5rem; }
+    .method-chart { background: white; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .method-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb; }
+    .method-item:last-child { border-bottom: none; }
+</style>
+
+<div class="action-bar">
+    <h2><i class="fas fa-money-bill-wave"></i> Fees Management Dashboard</h2>
+    <div>
+        <a href="{% url 'fee_categories' %}" class="btn btn-outline-primary"><i class="fas fa-tags"></i> Categories</a>
+        <a href="{% url 'fee_structures' %}" class="btn btn-outline-info"><i class="fas fa-cogs"></i> Fee Structures</a>
+        <a href="{% url 'student_fees' %}" class="btn btn-outline-success"><i class="fas fa-user-graduate"></i> Student Fees</a>
+        <a href="{% url 'fee_payments' %}" class="btn btn-outline-warning"><i class="fas fa-credit-card"></i> Payments</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ total_students }}</div>
+            <div class="stats-label"><i class="fas fa-users"></i> Total Students</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card success">
+            <div class="stats-number">₹{{ total_fees_assigned|floatformat:0 }}</div>
+            <div class="stats-label"><i class="fas fa-plus-circle"></i> Fees Assigned</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card info">
+            <div class="stats-number">₹{{ total_fees_paid|floatformat:0 }}</div>
+            <div class="stats-label"><i class="fas fa-check-circle"></i> Fees Paid</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card danger">
+            <div class="stats-number">₹{{ total_fees_due|floatformat:0 }}</div>
+            <div class="stats-label"><i class="fas fa-exclamation-triangle"></i> Fees Due</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="recent-section">
+            <h5><i class="fas fa-clock"></i> Recent Payments</h5>
+            {% if recent_payments %}
+                {% for payment in recent_payments %}
+                <div class="payment-item">
+                    <div>
+                        <div class="fw-bold">{{ payment.student_fee.student.name }}</div>
+                        <div class="payment-date">{{ payment.payment_date|date:"M d, Y" }} • {{ payment.get_payment_method_display }}</div>
+                    </div>
+                    <div class="payment-amount">₹{{ payment.amount|floatformat:0 }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No recent payments</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="recent-section">
+            <h5><i class="fas fa-exclamation-triangle"></i> Overdue Fees</h5>
+            {% if overdue_fees %}
+                {% for fee in overdue_fees %}
+                <div class="overdue-item">
+                    <div class="fw-bold">{{ fee.student.name }}</div>
+                    <div class="text-muted">{{ fee.fee_structure.name }} - ₹{{ fee.due_amount|floatformat:0 }} due</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No overdue fees</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="method-chart">
+            <h5><i class="fas fa-chart-pie"></i> Payment Methods</h5>
+            {% if payment_methods %}
+                {% for method in payment_methods %}
+                <div class="method-item">
+                    <span>{{ method.payment_method|title }}</span>
+                    <span class="fw-bold">₹{{ method.total|floatformat:0 }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">No payment data available</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="recent-section">
+            <h5><i class="fas fa-lightbulb"></i> Quick Actions</h5>
+            <div class="d-grid gap-2">
+                <a href="{% url 'fee_structure_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Create Fee Structure</a>
+                <a href="{% url 'student_fee_create' %}" class="btn btn-success"><i class="fas fa-user-plus"></i> Assign Fee to Student</a>
+                <a href="{% url 'fee_payment_create' %}" class="btn btn-info"><i class="fas fa-credit-card"></i> Record Payment</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
