@@ -56,4 +56,6 @@ urlpatterns = [
     path('timetable/', include('timetable.urls')),
     # Fees
     path('fees/', include('fees.urls')),
+    # Progress (student weekly/monthly task tracker)
+    path('progress/', include('progress.urls')),
 ]
