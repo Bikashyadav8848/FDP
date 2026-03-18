@@ -20,14 +20,27 @@
 
     <div class="row mb-4">
         <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm mb-3">
                 <div class="card-header">
                     <strong>Weeks</strong>
                 </div>
                 <div class="list-group list-group-flush">
                     {% for w in weeks %}
-                        <a href="?week={{ w.start|date:'Y-m-d' }}" class="list-group-item list-group-item-action {% if w.start == selected_week %}active{% endif %}">
+                        <a href="?week={{ w.start|date:'Y-m-d' }}&day={{ selected_day|date:'Y-m-d' }}" class="list-group-item list-group-item-action {% if w.start == selected_week %}active{% endif %}">
                             {{ w.label }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <strong>Days</strong>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for d in days %}
+                        <a href="?week={{ selected_week|date:'Y-m-d' }}&day={{ d.date|date:'Y-m-d' }}" class="list-group-item list-group-item-action {% if d.date == selected_day %}active{% endif %}">
+                            {{ d.label }}
                         </a>
                     {% endfor %}
                 </div>
@@ -98,6 +111,8 @@
             </div>
             <form method="post" class="d-flex gap-2 align-items-center">
                 {% csrf_token %}
+                <input type="hidden" name="week" value="{{ selected_week|date:'Y-m-d' }}">
+                <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
                 <input type="text" name="new_task_title" class="form-control" placeholder="Add new task" required>
                 <button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Add</button>
             </form>
@@ -105,6 +120,8 @@
 
         <form method="post">
             {% csrf_token %}
+            <input type="hidden" name="week" value="{{ selected_week|date:'Y-m-d' }}">
+            <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">

@@ -12,6 +12,11 @@ def get_week_start(any_date: date) -> date:
 class Task(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="progress_tasks")
     week_start = models.DateField(help_text="The Monday of the week this task belongs to")
+    day = models.DateField(
+        null=True,
+        blank=True,
+        help_text="The specific day this task is assigned to (within the week).",
+    )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     is_done = models.BooleanField(default=False)
@@ -19,8 +24,8 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-week_start", "title"]
-        unique_together = ("student", "week_start", "title")
+        ordering = ["-week_start", "day", "title"]
+        unique_together = ("student", "day", "title")
 
     def __str__(self):
-        return f"{self.student.name} | {self.week_start} | {self.title}"
+        return f"{self.student.name} | {self.day or self.week_start} | {self.title}"

@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from django.db.models import Q
 from django.shortcuts import redirect, render
 
 from students.models import Student
@@ -27,15 +28,37 @@ def student_progress(request):
 
     week_start = get_week_start(selected_week)
 
+    selected_day_str = request.GET.get("day")
+    if selected_day_str:
+        try:
+            selected_day = date.fromisoformat(selected_day_str)
+        except ValueError:
+            selected_day = week_start
+    else:
+        selected_day = week_start
+
+    # Ensure the selected day stays within the chosen week range
+    if selected_day < week_start or selected_day > week_start + timedelta(days=6):
+        selected_day = week_start
+
     if request.method == "POST":
         # Update existing task completion state (handle unchecked boxes too)
-        tasks_for_week = Task.objects.filter(student=student, week_start=week_start)
-        for task in tasks_for_week:
+        tasks_for_day = Task.objects.filter(
+            student=student,
+            week_start=week_start,
+        ).filter(Q(day=selected_day) | Q(day__isnull=True))
+
+        for task in tasks_for_day:
+            # Ensure tasks without a day are assigned to the selected day
+            if task.day is None:
+                task.day = selected_day
+
             checkbox_name = f"task_{task.id}"
             is_checked = checkbox_name in request.POST
             if task.is_done != is_checked:
                 task.is_done = is_checked
-                task.save()
+
+            task.save()
 
         # Add new task if provided
         new_title = request.POST.get("new_task_title", "").strip()
@@ -44,11 +67,12 @@ def student_progress(request):
             Task.objects.create(
                 student=student,
                 week_start=week_start,
+                day=selected_day,
                 title=new_title,
                 description=new_desc,
             )
 
-        return redirect(f"{request.path}?week={week_start.isoformat()}")
+        return redirect(f"{request.path}?week={week_start.isoformat()}&day={selected_day.isoformat()}")
 
     # Prepare week navigation (last 6 weeks)
     today = date.today()
@@ -58,10 +82,22 @@ def student_progress(request):
         w = current_week - timedelta(weeks=i)
         weeks.append({"start": w, "label": w.strftime("%b %d, %Y")})
 
-    tasks = Task.objects.filter(student=student, week_start=week_start).order_by("title")
+    # Ensure existing tasks without a day are treated as Monday tasks (for backward compatibility)
+    Task.objects.filter(student=student, week_start=week_start, day__isnull=True).update(day=week_start)
 
-    total_week = tasks.count()
-    done_week = tasks.filter(is_done=True).count()
+    # Tasks visible for selected day
+    tasks_for_day = Task.objects.filter(student=student, week_start=week_start, day=selected_day).order_by("title")
+
+    # Build day navigation for the current week (Monday - Sunday)
+    days = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        days.append({"date": day, "label": day.strftime("%a %d")})
+
+    # Weekly progress calculation (all tasks in week)
+    tasks_week = Task.objects.filter(student=student, week_start=week_start)
+    total_week = tasks_week.count()
+    done_week = tasks_week.filter(is_done=True).count()
     weekly_progress = int((done_week / total_week) * 100) if total_week else 0
 
     month = week_start.month
@@ -79,8 +115,10 @@ def student_progress(request):
     context = {
         "student": student,
         "weeks": weeks,
+        "days": days,
         "selected_week": week_start,
-        "tasks": tasks,
+        "selected_day": selected_day,
+        "tasks": tasks_for_day,
         "weekly_progress": weekly_progress,
         "monthly_progress": monthly_progress,
         "chart_data": chart_data,
