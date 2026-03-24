@@ -9,7 +9,12 @@
             <h1 class="mb-1">Student Progress</h1>
             <p class="text-muted mb-0">Keep track of weekly tasks and see progress charts at a glance.</p>
         </div>
-        <div>
+        <div class="d-flex gap-2 align-items-center">
+            <select class="form-select" onchange="location.href='?student=' + this.value + '&day={{ selected_day|date:'Y-m-d' }}'">
+                {% for s in students %}
+                    <option value="{{ s.id }}" {% if s.id == student.id %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
             <a href="/" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
         </div>
     </div>
@@ -19,27 +24,14 @@
     {% endif %}
 
     <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm mb-3">
-                <div class="card-header">
-                    <strong>Weeks</strong>
-                </div>
-                <div class="list-group list-group-flush">
-                    {% for w in weeks %}
-                        <a href="?week={{ w.start|date:'Y-m-d' }}&day={{ selected_day|date:'Y-m-d' }}" class="list-group-item list-group-item-action {% if w.start == selected_week %}active{% endif %}">
-                            {{ w.label }}
-                        </a>
-                    {% endfor %}
-                </div>
-            </div>
-
+        <div class="col-md-12 mb-3">
             <div class="card shadow-sm">
                 <div class="card-header">
                     <strong>Days</strong>
                 </div>
                 <div class="list-group list-group-flush">
                     {% for d in days %}
-                        <a href="?week={{ selected_week|date:'Y-m-d' }}&day={{ d.date|date:'Y-m-d' }}" class="list-group-item list-group-item-action {% if d.date == selected_day %}active{% endif %}">
+                        <a href="?student={{ student.id }}&day={{ d.date|date:'Y-m-d' }}" class="list-group-item list-group-item-action {% if d.date == selected_day %}active{% endif %}">
                             {{ d.label }}
                         </a>
                     {% endfor %}
@@ -84,43 +76,66 @@
                         <div class="col-md-6 mb-3">
                             <div class="card border-0">
                                 <div class="card-body p-3">
-                                    <h6 class="mb-2">This Week</h6>
-                                    <canvas id="weeklyChart" height="220"></canvas>
+                                    <h6 class="mb-2">This Week (Daily Progress)</h6>
+                                    <canvas id="weeklyCandlestickChart" height="150"></canvas>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <div class="card border-0">
                                 <div class="card-body p-3">
-                                    <h6 class="mb-2">This Month</h6>
-                                    <canvas id="monthlyChart" height="220"></canvas>
+                                    <h6 class="mb-2">This Month (Weekly Progress)</h6>
+                                    <canvas id="monthlyCandlestickChart" height="150"></canvas>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="text-muted small mt-2">
+                        <i class="fas fa-info-circle"></i> 
+                        Candlestick shows: Base (0) to Total Tasks (top), Completed Tasks (filled portion)
+                    </div>
                 </div>
             </div>
+
+            <style>
+                #weeklyCandlestickChart, #monthlyCandlestickChart {
+                    max-height: 150px !important;
+                    height: 150px !important;
+                    width: 100% !important;
+                }
+            </style>
         </div>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
             <div>
-                <strong>Tasks for week of {{ selected_week|date:"M d, Y" }}</strong><br>
+                <strong>Tasks for {{ selected_day|date:"l, M d, Y" }}</strong><br>
                 <small class="text-muted">Student: {{ student.name }}</small>
             </div>
-            <form method="post" class="d-flex gap-2 align-items-center">
+            <form method="post" class="d-flex gap-2 align-items-center" id="add-task-form">
                 {% csrf_token %}
-                <input type="hidden" name="week" value="{{ selected_week|date:'Y-m-d' }}">
                 <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
                 <input type="text" name="new_task_title" class="form-control" placeholder="Add new task" required>
+                <select name="new_task_category" class="form-select">
+                    <option value="academic">Academic</option>
+                    <option value="personal">Personal</option>
+                    <option value="extracurricular">Extracurricular</option>
+                    <option value="health">Health</option>
+                    <option value="other">Other</option>
+                </select>
+                <select name="new_task_priority" class="form-select">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
                 <button class="btn btn-primary" type="submit"><i class="fas fa-plus"></i> Add</button>
             </form>
         </div>
 
-        <form method="post">
+        <form method="post" id="task-update-form">
             {% csrf_token %}
-            <input type="hidden" name="week" value="{{ selected_week|date:'Y-m-d' }}">
             <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -128,7 +143,10 @@
                         <tr>
                             <th width="60">Done</th>
                             <th>Task</th>
+                            <th>Category</th>
+                            <th>Priority</th>
                             <th>Description</th>
+                            <th width="80">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -139,12 +157,27 @@
                                         <input type="checkbox" name="task_{{ task.id }}" class="form-check-input" {% if task.is_done %}checked{% endif %}>
                                     </td>
                                     <td>{{ task.title }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="{{ task.category_icon }}"></i> {{ task.get_category_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ task.priority_color }}">
+                                            {{ task.get_priority_display }}
+                                        </span>
+                                    </td>
                                     <td class="text-muted">{{ task.description|default:"—" }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteTask({{ task.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="3" class="text-center py-4 text-muted">
+                                <td colspan="6" class="text-center py-4 text-muted">
                                     No tasks for this week yet. Add a task to start tracking progress.
                                 </td>
                             </tr>
@@ -162,45 +195,182 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const chartData = {{ chart_data|safe }};
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartData = {{ chart_data|safe }};
+        const candlestickWeekly = {{ candlestick_weekly|safe }};
+        const candlestickMonthly = {{ candlestick_monthly|safe }};
 
-    const weeklyCtx = document.getElementById('weeklyChart');
-    const monthlyCtx = document.getElementById('monthlyChart');
+        // Existing doughnut charts
+        const weeklyCtx = document.getElementById('weeklyChart');
+        const monthlyCtx = document.getElementById('monthlyChart');
 
-    new Chart(weeklyCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Done', 'Pending'],
-            datasets: [{
-                data: [chartData.weekly.done, chartData.weekly.pending],
-                backgroundColor: ['#16a34a', '#e5e7eb'],
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` } }
-            }
+        if (weeklyCtx) {
+            new Chart(weeklyCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Done', 'Pending'],
+                    datasets: [{
+                        data: [chartData.weekly.done, chartData.weekly.pending],
+                        backgroundColor: ['#16a34a', '#e5e7eb'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` } }
+                    }
+                }
+            });
+        }
+
+        if (monthlyCtx) {
+            new Chart(monthlyCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Done', 'Pending'],
+                    datasets: [{
+                        data: [chartData.monthly.done, chartData.monthly.pending],
+                        backgroundColor: ['#0ea5e9', '#e5e7eb'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` } }
+                    }
+                }
+            });
+        }
+
+        // Progress Charts
+        const weeklyCandleCtx = document.getElementById('weeklyCandlestickChart');
+        const monthlyCandleCtx = document.getElementById('monthlyCandlestickChart');
+
+        if (candlestickWeekly && candlestickWeekly.length > 0 && weeklyCandleCtx) {
+            const weeklyLabels = candlestickWeekly.map(item => item.x);
+            const weeklyCompleted = candlestickWeekly.map(item => item.c);
+            const weeklyTotal = candlestickWeekly.map(item => item.h);
+
+            new Chart(weeklyCandleCtx, {
+                type: 'bar',
+                data: {
+                    labels: weeklyLabels,
+                    datasets: [
+                        {
+                            label: 'Completed Tasks',
+                            data: weeklyCompleted,
+                            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Remaining Tasks',
+                            data: weeklyLabels.map((label, index) => Math.max(0, weeklyTotal[index] - weeklyCompleted[index])),
+                            backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: { 
+                            stacked: true,
+                            barPercentage: 0.4,
+                            categoryPercentage: 0.6
+                        },
+                        y: { 
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        if (candlestickMonthly && candlestickMonthly.length > 0 && monthlyCandleCtx) {
+            const monthlyLabels = candlestickMonthly.map(item => item.x);
+            const monthlyCompleted = candlestickMonthly.map(item => item.c);
+            const monthlyTotal = candlestickMonthly.map(item => item.h);
+
+            new Chart(monthlyCandleCtx, {
+                type: 'bar',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [
+                        {
+                            label: 'Completed Tasks',
+                            data: monthlyCompleted,
+                            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Remaining Tasks',
+                            data: monthlyLabels.map((label, index) => Math.max(0, monthlyTotal[index] - monthlyCompleted[index])),
+                            backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: { 
+                            stacked: true,
+                            barPercentage: 0.4,
+                            categoryPercentage: 0.6
+                        },
+                        y: { 
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
     });
 
-    new Chart(monthlyCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Done', 'Pending'],
-            datasets: [{
-                data: [chartData.monthly.done, chartData.monthly.pending],
-                backgroundColor: ['#0ea5e9', '#e5e7eb'],
-                borderWidth: 0,
-            }]
-        },
-        options: {
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` } }
-            }
+    function deleteTask(taskId) {
+        if (confirm('Are you sure you want to delete this task?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <input type="hidden" name="delete_task_id" value="${taskId}">
+                <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
         }
-    });
+    }
 </script>
 {% endblock %}

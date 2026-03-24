@@ -1,6 +1,7 @@
 
 from django.db import models
 from django.core.validators import EmailValidator, RegexValidator
+from django.utils import timezone
 
 class Teacher(models.Model):
     # Personal Information

@@ -68,13 +68,13 @@ class TeacherListView(ListView):
 class TeacherCreateView(CreateView):
     model = Teacher
     template_name = 'teacher_form.html'
-    fields = ['name', 'subject']
+    fields = ['name', 'email', 'phone', 'subject', 'qualification', 'experience_years']
     success_url = reverse_lazy('teachers')
 
 class TeacherUpdateView(UpdateView):
     model = Teacher
     template_name = 'teacher_form.html'
-    fields = ['name', 'subject']
+    fields = ['name', 'email', 'phone', 'subject', 'qualification', 'experience_years']
     success_url = reverse_lazy('teachers')
 
 class TeacherDeleteView(DeleteView):
