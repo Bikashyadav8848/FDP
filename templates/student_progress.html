@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Student Progress - Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-chart-line text-indigo me-2" style="color:var(--primary);"></i> Student Progress</h2>
+        <p class="text-muted mb-0">Track daily tasks, analyze weekly trends, and monitor student goal achievement.</p>
+    </div>
+    
+    <div class="d-flex align-items-center bg-white p-2 rounded-pill shadow-sm border px-3">
+        <i class="fas fa-user-graduate text-muted me-2"></i>
+        <span class="text-dark fw-bold me-2 small text-uppercase" style="letter-spacing: 0.5px;">Student:</span>
+        <select class="form-select form-select-sm border-0 shadow-none bg-transparent fw-semibold" style="width: auto; cursor:pointer;" onchange="location.href='?student=' + this.value + '&day={{ selected_day|date:'Y-m-d' }}'">
+            {% for s in students %}
+                <option value="{{ s.id }}" {% if s.id == student.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if error %}
+    <div class="alert alert-warning rounded-pill shadow-sm border-warning-subtle d-flex align-items-center mb-4">
+        <i class="fas fa-exclamation-triangle me-3 fs-5"></i> <strong>{{ error }}</strong>
+    </div>
+{% endif %}
+
+<div class="row g-4 mb-5">
+    <!-- Sidebar Navigation for Days -->
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0 text-dark text-uppercase small" style="letter-spacing: 0.5px;"><i class="fas fa-calendar-week text-primary me-2"></i> This Week</h6>
+            </div>
+            <div class="card-body p-2">
+                <div class="list-group list-group-flush border-0 gap-1 content-days-nav">
+                    {% for d in days %}
+                        <a href="?student={{ student.id }}&day={{ d.date|date:'Y-m-d' }}" 
+                           class="list-group-item list-group-item-action rounded-3 border-0 d-flex justify-content-between align-items-center {% if d.date == selected_day %}active bg-primary shadow-sm text-white{% else %}text-muted{% endif %}" style="transition: all 0.2s; font-weight: 500;">
+                            <span><i class="far fa-calendar-alt opacity-50 me-2"></i> {{ d.label }}</span>
+                            {% if d.date == selected_day %}<i class="fas fa-check-circle fs-6"></i>{% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="col-lg-9">
+        
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden" style="border-left: 4px solid #10b981;">
+                    <i class="fas fa-chart-line position-absolute" style="font-size: 5rem; right: -15px; bottom: -15px; opacity: 0.05; color: #10b981;"></i>
+                    <div class="card-body p-4">
+                        <h6 class="text-muted fw-bold text-uppercase mb-3" style="font-size:0.75rem; letter-spacing:0.5px;">Weekly Trajectory</h6>
+                        <div class="d-flex align-items-center mb-2">
+                            <h2 class="mb-0 fw-bold me-3 text-dark">{{ weekly_progress }}%</h2>
+                            <div class="progress flex-grow-1 rounded-pill" style="height: 10px; background-color: #f3f4f6;">
+                                <div class="progress-bar bg-success rounded-pill" role="progressbar" style="width: {{ weekly_progress }}%;" aria-valuenow="{{ weekly_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <p class="mb-0 text-muted small"><i class="fas fa-check-circle text-success me-1"></i> Tasks completed this week.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden" style="border-left: 4px solid var(--primary);">
+                    <i class="fas fa-chart-pie position-absolute" style="font-size: 5rem; right: -15px; bottom: -15px; opacity: 0.05; color: var(--primary);"></i>
+                    <div class="card-body p-4">
+                        <h6 class="text-muted fw-bold text-uppercase mb-3" style="font-size:0.75rem; letter-spacing:0.5px;">Monthly Milestone</h6>
+                        <div class="d-flex align-items-center mb-2">
+                            <h2 class="mb-0 fw-bold me-3 text-dark">{{ monthly_progress }}%</h2>
+                            <div class="progress flex-grow-1 rounded-pill" style="height: 10px; background-color: #f3f4f6;">
+                                <div class="progress-bar bg-primary rounded-pill" role="progressbar" style="width: {{ monthly_progress }}%;" aria-valuenow="{{ monthly_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <p class="mb-0 text-muted small"><i class="fas fa-bullseye text-primary me-1"></i> Tasks completed this month.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                    <h6 class="fw-bold mb-4 text-dark"><i class="fas fa-calendar-day text-success me-2"></i> Weekly Velocity</h6>
+                    <div style="height: 200px;">
+                        <canvas id="weeklyCandlestickChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                    <h6 class="fw-bold mb-4 text-dark"><i class="fas fa-calendar-alt text-primary me-2"></i> Monthly Velocity</h6>
+                    <div style="height: 200px;">
+                        <canvas id="monthlyCandlestickChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Management -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 p-4">
+                <div>
+                    <h5 class="mb-1 fw-bold text-dark"><i class="fas fa-clipboard-list text-warning me-2"></i> Tasks for {{ selected_day|date:"l, M d" }}</h5>
+                    <p class="text-muted small mb-0">Manage and update specific goals for the selected day.</p>
+                </div>
+                
+                <form method="post" id="add-task-form" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden border">
+                        <input type="text" name="new_task_title" class="form-control border-0 px-3 bg-light text-dark fw-semibold" placeholder="Add new task..." required style="min-width: 180px;">
+                        <select name="new_task_category" class="form-select border-0 border-start bg-white" style="max-width: 130px; font-size: 0.85rem;">
+                            <option value="academic">Academic</option>
+                            <option value="personal">Personal</option>
+                            <option value="extracurricular">Activity</option>
+                            <option value="health">Health</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select name="new_task_priority" class="form-select border-0 border-start bg-white" style="max-width: 100px; font-size: 0.85rem;">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Med</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                        <button class="btn btn-primary px-3 fw-bold" type="submit"><i class="fas fa-plus"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <form method="post" id="task-update-form" class="m-0">
+                {% csrf_token %}
+                <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th width="60" class="text-center border-0 text-muted"><i class="fas fa-check-square"></i></th>
+                                <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Task Description</th>
+                                <th width="140" class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Category</th>
+                                <th width="100" class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Priority</th>
+                                <th width="80" class="border-0 text-uppercase fw-bold text-muted text-center" style="font-size:0.75rem; letter-spacing:0.5px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if tasks %}
+                                {% for task in tasks %}
+                                    <tr style="transition: all 0.2s;" class="{% if task.is_done %}opacity-50{% endif %}">
+                                        <td class="text-center py-3">
+                                            <input type="checkbox" name="task_{{ task.id }}" class="form-check-input mb-0 shadow-sm" style="width: 1.5rem; height: 1.5rem; cursor: pointer;" {% if task.is_done %}checked{% endif %}>
+                                        </td>
+                                        <td class="fw-semibold text-dark {% if task.is_done %}text-decoration-line-through text-muted{% endif %}">
+                                            {{ task.title }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border shadow-sm rounded-pill fw-semibold px-3 py-2">
+                                                <i class="{{ task.category_icon }} text-muted me-1"></i> {{ task.get_category_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ task.priority_color }} text-white shadow-sm rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                                {{ task.get_priority_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-light text-danger btn-sm border shadow-sm rounded-pill px-3" onclick="deleteTask({{ task.id }})" title="Remove Task">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="opacity-25 mb-3"><i class="fas fa-clipboard fs-1 text-muted"></i></div>
+                                        <h5 class="fw-bold text-dark">No Tasks Scheduled</h5>
+                                        <p class="text-muted mb-0">You don't have any tasks for {{ selected_day|date:"l" }}. Use the field above to add something new!</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if tasks %}
+                <div class="card-footer bg-white border-top p-4 d-flex justify-content-end align-items-center">
+                    <button type="submit" class="btn btn-success rounded-pill px-5 fw-bold shadow-sm">
+                        <i class="fas fa-save me-2"></i> Save Task Progress
+                    </button>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const candlestickWeekly = {{ candlestick_weekly|safe|default:"[]" }};
+        const candlestickMonthly = {{ candlestick_monthly|safe|default:"[]" }};
+
+        const chartCommonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: {family: "'Inter', sans-serif"} } },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1f2937',
+                    bodyColor: '#4b5563',
+                    borderColor: '#e5e7eb',
+                    borderWidth: 1,
+                    padding: 12,
+                    boxPadding: 6,
+                    usePointStyle: true,
+                    titleFont: {family: "'Inter', sans-serif", weight: 'bold'},
+                    bodyFont: {family: "'Inter', sans-serif"},
+                    callbacks: {
+                        label: function(context) {
+                            return ` ${context.dataset.label}: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    stacked: true, 
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: {font: {family: "'Inter', sans-serif"}}
+                },
+                y: { 
+                    stacked: true, 
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1, precision: 0, font: {family: "'Inter', sans-serif"} },
+                    border: { display: false },
+                    grid: { color: '#f3f4f6', drawBorder: false }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        };
+
+        const weeklyCandleCtx = document.getElementById('weeklyCandlestickChart');
+        if (candlestickWeekly && candlestickWeekly.length > 0 && weeklyCandleCtx) {
+            const labels = candlestickWeekly.map(item => item.x);
+            const completed = candlestickWeekly.map(item => item.c);
+            const total = candlestickWeekly.map(item => item.h);
+            const remaining = labels.map((l, i) => Math.max(0, total[i] - completed[i]));
+
+            new Chart(weeklyCandleCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Completed',
+                            data: completed,
+                            backgroundColor: '#10b981', // green
+                            borderRadius: remaining.map(r => r === 0 ? 6 : 0), 
+                            barThickness: 'flex',
+                            maxBarThickness: 32
+                        },
+                        {
+                            label: 'Pending',
+                            data: remaining,
+                            backgroundColor: '#f3f4f6', // light gray
+                            borderRadius: { topLeft: 6, topRight: 6 },
+                            barThickness: 'flex',
+                            maxBarThickness: 32
+                        }
+                    ]
+                },
+                options: chartCommonOptions
+            });
+        }
+
+        const monthlyCandleCtx = document.getElementById('monthlyCandlestickChart');
+        if (candlestickMonthly && candlestickMonthly.length > 0 && monthlyCandleCtx) {
+            const labels = candlestickMonthly.map(item => item.x);
+            const completed = candlestickMonthly.map(item => item.c);
+            const total = candlestickMonthly.map(item => item.h);
+            const remaining = labels.map((l, i) => Math.max(0, total[i] - completed[i]));
+
+            new Chart(monthlyCandleCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Completed',
+                            data: completed,
+                            backgroundColor: '#4f46e5', // indigo
+                            borderRadius: remaining.map(r => r === 0 ? 6 : 0),
+                            barThickness: 'flex',
+                            maxBarThickness: 32
+                        },
+                        {
+                            label: 'Pending',
+                            data: remaining,
+                            backgroundColor: '#f3f4f6',
+                            borderRadius: { topLeft: 6, topRight: 6 },
+                            barThickness: 'flex',
+                            maxBarThickness: 32
+                        }
+                    ]
+                },
+                options: chartCommonOptions
+            });
+        }
+    });
+
+    function deleteTask(taskId) {
+        if (confirm('Are you certain you wish to delete this task completely?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <input type="hidden" name="delete_task_id" value="${taskId}">
+                <input type="hidden" name="day" value="{{ selected_day|date:'Y-m-d' }}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
+<style>
+    .content-days-nav .list-group-item:hover:not(.active) {
+        background-color: #f8f9fa;
+        color: var(--primary) !important;
+    }
+</style>
+{% endblock %}

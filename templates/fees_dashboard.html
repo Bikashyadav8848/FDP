@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}Fees Dashboard - Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-wallet text-indigo me-2" style="color:var(--primary);"></i> Fees Dashboard</h2>
+        <p class="text-muted mb-0">Overview of institution finances, recent payments, and outstanding dues.</p>
+    </div>
+    
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'fee_categories' %}" class="btn btn-light shadow-sm border rounded-pill px-4 fw-semibold text-muted">
+            <i class="fas fa-tags me-1"></i> Categories
+        </a>
+        <a href="{% url 'fee_structures' %}" class="btn btn-light shadow-sm border rounded-pill px-4 fw-semibold text-muted">
+            <i class="fas fa-cogs me-1"></i> Structures
+        </a>
+        <a href="{% url 'student_fees' %}" class="btn btn-light shadow-sm border rounded-pill px-4 fw-semibold text-muted">
+            <i class="fas fa-user-graduate me-1"></i> Student Fees
+        </a>
+        <a href="{% url 'fee_payments' %}" class="btn btn-primary shadow-sm rounded-pill px-4 fw-bold">
+            <i class="fas fa-list me-1"></i> All Payments
+        </a>
+    </div>
+</div>
+
+<!-- KPI Row -->
+<div class="row g-4 mb-4">
+    <!-- Total Students -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden" style="border-bottom: 4px solid var(--primary);">
+            <i class="fas fa-users position-absolute" style="font-size: 5rem; right: -15px; bottom: -15px; opacity: 0.05; color: var(--primary);"></i>
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted fw-bold text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Enrolled Students</h6>
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-user-graduate fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="mb-0 fw-black text-dark">{{ total_students }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fees Assigned -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden" style="border-bottom: 4px solid #3b82f6;">
+            <i class="fas fa-file-invoice-dollar position-absolute" style="font-size: 5rem; right: -15px; bottom: -15px; opacity: 0.05; color: #3b82f6;"></i>
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted fw-bold text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Expected Revenue</h6>
+                    <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-chart-line fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="mb-0 fw-black text-dark">₹{{ total_fees_assigned|floatformat:0 }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fees Paid -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden" style="border-bottom: 4px solid #10b981;">
+            <i class="fas fa-check-circle position-absolute" style="font-size: 5rem; right: -15px; bottom: -15px; opacity: 0.05; color: #10b981;"></i>
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted fw-bold text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Total Collected</h6>
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-rupee-sign fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="mb-0 fw-black text-dark">₹{{ total_fees_paid|floatformat:0 }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Fees Due -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden" style="border-bottom: 4px solid #ef4444;">
+            <i class="fas fa-exclamation-triangle position-absolute" style="font-size: 5rem; right: -15px; bottom: -15px; opacity: 0.05; color: #ef4444;"></i>
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h6 class="text-muted fw-bold text-uppercase mb-0" style="font-size:0.75rem; letter-spacing:0.5px;">Pending Dues</h6>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i class="fas fa-clock fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="mb-0 fw-black text-danger">₹{{ total_fees_due|floatformat:0 }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Recent Payments -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center p-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-history text-primary me-2"></i> Recent Transactions</h5>
+                <a href="{% url 'fee_payments' %}" class="btn btn-sm btn-light border rounded-pill shadow-sm text-muted fw-semibold px-3">View All</a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 text-uppercase fw-bold text-muted ps-4" style="font-size:0.75rem; letter-spacing:0.5px;">Student</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Date & Method</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted text-end pe-4" style="font-size:0.75rem; letter-spacing:0.5px;">Amount Paid</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_payments %}
+                            {% for payment in recent_payments %}
+                            <tr style="transition: background-color 0.2s;">
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold rounded-circle shadow-sm" style="width:40px; height:40px;">
+                                            {{ payment.student_fee.student.name|make_list|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ payment.student_fee.student.name }}</div>
+                                            <div class="text-muted small">{{ payment.student_fee.fee_structure.name }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ payment.payment_date|date:"M d, Y" }}</div>
+                                    <span class="badge bg-light text-dark border rounded-pill shadow-sm" style="font-size: 0.7rem;">
+                                        <i class="fas fa-check-circle text-success me-1"></i> {{ payment.get_payment_method_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="fw-black text-success fs-5">₹{{ payment.amount|floatformat:0 }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5">
+                                    <div class="opacity-25 mb-3"><i class="fas fa-receipt fs-1 text-muted"></i></div>
+                                    <h6 class="fw-bold text-dark">No Recent Payments</h6>
+                                    <p class="text-muted small mb-0">Transactions will appear here once recorded.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Actions & Alerts -->
+    <div class="col-xl-4 col-lg-5">
+        
+        <!-- Quick Actions -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white border-bottom py-3 p-4">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-bolt text-warning me-2"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-grid gap-3">
+                    <a href="{% url 'fee_payment_create' %}" class="btn btn-primary btn-lg rounded-pill shadow-sm fw-bold d-flex align-items-center justify-content-center text-start">
+                        <i class="fas fa-plus-circle fs-4 me-3 opacity-75"></i>
+                        <div>
+                            <div style="line-height: 1;">Record Payment</div>
+                            <small class="fw-normal opacity-75" style="font-size: 0.75rem;">Log a new transaction</small>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'student_fee_create' %}" class="btn btn-light border btn-lg rounded-pill shadow-sm fw-bold d-flex align-items-center justify-content-center text-start text-dark">
+                        <i class="fas fa-user-tag fs-4 me-3 text-success opacity-75"></i>
+                        <div>
+                            <div style="line-height: 1;">Assign Fee</div>
+                            <small class="fw-normal text-muted" style="font-size: 0.75rem;">Apply structure to student</small>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'fee_structure_create' %}" class="btn btn-light border btn-lg rounded-pill shadow-sm fw-bold d-flex align-items-center justify-content-center text-start text-dark">
+                        <i class="fas fa-layer-group fs-4 me-3 text-info opacity-75"></i>
+                        <div>
+                            <div style="line-height: 1;">Create Structure</div>
+                            <small class="fw-normal text-muted" style="font-size: 0.75rem;">Setup new fee types</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Alerts -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white border-bottom py-3 p-4 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-exclamation-circle text-danger me-2"></i> Overdue Alerts</h5>
+                <span class="badge bg-danger rounded-pill">{{ overdue_fees|length }} Pending</span>
+            </div>
+            <div class="list-group list-group-flush border-0">
+                {% if overdue_fees %}
+                    {% for fee in overdue_fees|slice:":5" %}
+                    <div class="list-group-item border-0 py-3 border-bottom" style="background: #fef2f2; border-left: 4px solid #ef4444 !important;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark">{{ fee.student.name }}</div>
+                                <div class="text-muted small">{{ fee.fee_structure.name }}</div>
+                            </div>
+                            <div class="text-danger fw-bold">₹{{ fee.due_amount|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if overdue_fees|length > 5 %}
+                    <a href="{% url 'student_fees' %}" class="list-group-item list-group-item-action text-center text-danger fw-bold border-0 py-3 bg-light">
+                        View All Overdue
+                    </a>
+                    {% endif %}
+                {% else %}
+                    <div class="p-4 text-center">
+                        <i class="fas fa-check-circle text-success fs-1 mb-2 opacity-50"></i>
+                        <p class="text-muted mb-0 fw-semibold">No overdue fees currently.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+<style>
+    .fw-black { font-weight: 900; }
+</style>
+{% endblock %}

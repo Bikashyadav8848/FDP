@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Fees{% endblock %}
+
+{% block content %}
+<style>
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .filter-section { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-bottom: 2rem; }
+    .summary-card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .summary-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+    .summary-label { color: #6b7280; font-weight: 600; }
+    .summary-value { font-weight: 700; font-size: 1.1rem; }
+    .fee-card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .fee-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+    .fee-title { font-size: 1.25rem; font-weight: 600; }
+    .fee-status { padding: 0.25rem 0.75rem; border-radius: 1rem; font-weight: 600; font-size: 0.75rem; }
+    .fee-status.pending { background: #fef3c7; color: #92400e; }
+    .fee-status.partially_paid { background: #d1fae5; color: #065f46; }
+    .fee-status.paid { background: #d1fae5; color: #065f46; }
+    .fee-status.overdue { background: #fee2e2; color: #991b1b; }
+    .fee-status.waived { background: #e0f2fe; color: #0369a1; }
+    .fee-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .fee-detail { background: #f9fafb; padding: 0.75rem; border-radius: 0.5rem; }
+    .card-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+</style>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-user-graduate text-indigo me-2" style="color:var(--primary);"></i> Student Fees Accounts</h2>
+        <p class="text-muted mb-0">Manage assigned fees, track clearings, and review pending balances.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'fees_dashboard' %}" class="btn btn-light shadow-sm border rounded-pill px-4 fw-semibold text-muted">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+        <a href="{% url 'student_fee_create' %}" class="btn btn-primary shadow-sm rounded-pill px-4 fw-bold">
+            <i class="fas fa-plus-circle me-1"></i> Assign Fee
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-lg-3 col-md-4">
+                <label class="form-label fw-bold text-muted small text-uppercase">Student</label>
+                <select name="student" class="form-select bg-light border-0 shadow-sm">
+                    <option value="">All Students</option>
+                    {% for student in students %}
+                    <option value="{{ student.id }}" {% if request.GET.student == student.id|stringformat:"s" %}selected{% endif %}>{{ student.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label fw-bold text-muted small text-uppercase">Class</label>
+                <select name="class" class="form-select bg-light border-0 shadow-sm">
+                    <option value="">All Classes</option>
+                    {% for class_obj in classes %}
+                    <option value="{{ class_obj.id }}" {% if request.GET.class == class_obj.id|stringformat:"s" %}selected{% endif %}>{{ class_obj }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label fw-bold text-muted small text-uppercase">Status</label>
+                <select name="status" class="form-select bg-light border-0 shadow-sm">
+                    <option value="">All Statuses</option>
+                    {% for key, label in status_choices %}
+                    <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label fw-bold text-muted small text-uppercase">Academic Yr</label>
+                <select name="academic_year" class="form-select bg-light border-0 shadow-sm">
+                    <option value="">All Years</option>
+                    {% for year in academic_years %}
+                    <option value="{{ year }}" {% if request.GET.academic_year == year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm"><i class="fas fa-filter me-1"></i> Filter</button>
+                <a href="{% url 'student_fees' %}" class="btn btn-light border w-100 rounded-pill fw-semibold text-muted shadow-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-lg-4">
+        <!-- Summary Cards Stacked -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3" style="border-left: 4px solid var(--primary);">
+            <div class="card-body p-4">
+                <p class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Assigned</p>
+                <h3 class="fw-black text-dark mb-0">₹{{ total_fees|floatformat:0 }}</h3>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3" style="border-left: 4px solid #10b981;">
+            <div class="card-body p-4">
+                <p class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Collected</p>
+                <h3 class="fw-black text-success mb-0">₹{{ total_paid|floatformat:0 }}</h3>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="border-left: 4px solid #ef4444;">
+            <div class="card-body p-4">
+                <p class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Balance Due</p>
+                <h3 class="fw-black text-danger mb-0">₹{{ total_due|floatformat:0 }}</h3>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-9 col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 text-uppercase fw-bold text-muted ps-4 py-3" style="font-size:0.75rem; letter-spacing:0.5px;">Student Info</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted py-3" style="font-size:0.75rem; letter-spacing:0.5px;">Finances</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted py-3 text-center" style="font-size:0.75rem; letter-spacing:0.5px;">Status</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted pe-4 py-3 text-end" style="font-size:0.75rem; letter-spacing:0.5px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if student_fees %}
+                            {% for fee in student_fees %}
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold rounded-circle shadow-sm" style="width:42px; height:42px;">
+                                            {{ fee.student.name|make_list|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ fee.student.name }}</div>
+                                            <div class="text-muted small fw-semibold">{{ fee.fee_structure.name }} <span class="opacity-50 mx-1">|</span> {{ fee.academic_year }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <div class="d-flex flex-column">
+                                        <div class="d-flex justify-content-between mb-1" style="max-width: 150px;">
+                                            <span class="text-muted small font-monospace">Total:</span>
+                                            <span class="fw-bold text-dark">₹{{ fee.total_amount|floatformat:0 }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between" style="max-width: 150px;">
+                                            <span class="text-danger small font-monospace fw-semibold">Due:</span>
+                                            <span class="fw-bold text-danger">₹{{ fee.due_amount|floatformat:0 }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center py-3">
+                                    {% if fee.status == 'paid' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="fas fa-check-circle me-1"></i> Full Paid</span>
+                                    {% elif fee.status == 'pending' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="fas fa-clock me-1"></i> Pending</span>
+                                    {% elif fee.status == 'partially_paid' %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="fas fa-adjust me-1"></i> Partial</span>
+                                    {% elif fee.status == 'overdue' %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="fas fa-exclamation-triangle me-1"></i> Overdue</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-3 py-2 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;"><i class="fas fa-circle me-1"></i> {{ fee.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="pe-4 py-3 text-end">
+                                    <div class="btn-group shadow-sm rounded-pill">
+                                        <a href="{% url 'fee_payment_create' %}?student={{ fee.student.id }}" class="btn btn-sm btn-success px-3 fw-semibold" title="Record Payment">Pay</a>
+                                        <a href="{% url 'student_fee_update' fee.pk %}" class="btn btn-sm btn-light border" title="Edit"><i class="fas fa-edit text-primary"></i></a>
+                                        <a href="{% url 'student_fee_delete' fee.pk %}" class="btn btn-sm btn-light border" title="Delete"><i class="fas fa-trash text-danger"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="opacity-25 mb-3"><i class="fas fa-folder-open fs-1 text-muted"></i></div>
+                                    <h5 class="fw-bold text-dark">No Fees Found</h5>
+                                    <p class="text-muted mb-4">You haven't assigned any fees yet, or no records match your filters.</p>
+                                    <a href="{% url 'student_fee_create' %}" class="btn btn-primary rounded-pill shadow-sm px-4 fw-bold"><i class="fas fa-plus-circle me-1"></i> Assign First Fee</a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if is_paginated %}
+            <div class="card-footer bg-white border-top p-4 d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0 shadow-sm rounded-pill overflow-hidden">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link text-primary fw-bold px-3" href="?page={{ page_obj.previous_page_number }}">Prev</a></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link fw-semibold px-3" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link text-primary fw-bold px-3" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black { font-weight: 900; }
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    .pagination .page-link {
+        color: var(--text-main);
+        border: 1px solid #e5e7eb;
+    }
+</style>
+{% endblock %}

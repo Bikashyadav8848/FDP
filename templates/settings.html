@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-cog text-muted me-2"></i> System Settings</h2>
+        <p class="text-muted mb-0">Manage your institution preferences and system configurations.</p>
+    </div>
+    <button type="submit" form="settingsForm" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+        <i class="fas fa-save me-2"></i> Save Changes
+    </button>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Sidebar Navigation for Settings -->
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm rounded-4 position-sticky" style="top: 20px;">
+            <div class="list-group list-group-flush rounded-4 overflow-hidden border-0">
+                <a href="#general" class="list-group-item list-group-item-action border-0 py-3 active fw-semibold shadow-sm text-white" style="background-color: var(--primary);">
+                    <i class="fas fa-sliders-h me-2"></i> General Settings
+                </a>
+                <a href="#appearance" class="list-group-item list-group-item-action border-0 py-3 fw-semibold text-muted">
+                    <i class="fas fa-paint-brush me-2"></i> Appearance
+                </a>
+                <a href="#notifications" class="list-group-item list-group-item-action border-0 py-3 fw-semibold text-muted">
+                    <i class="fas fa-bell me-2"></i> Notifications
+                </a>
+                <a href="#security" class="list-group-item list-group-item-action border-0 py-3 fw-semibold text-muted">
+                    <i class="fas fa-shield-alt me-2"></i> Security
+                </a>
+                <a href="#backups" class="list-group-item list-group-item-action border-0 py-3 fw-semibold text-muted">
+                    <i class="fas fa-database me-2"></i> Backups
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Content Area -->
+    <div class="col-lg-9">
+        
+<form method="POST" id="settingsForm">
+        {% csrf_token %}
+        <!-- General Settings Box -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="general">
+            <h5 class="fw-bold border-bottom pb-3 mb-4 text-dark"><i class="fas fa-university text-primary me-2"></i> Institution Details</h5>
+            
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label fw-semibold text-muted small text-uppercase" style="letter-spacing: 0.5px;">Institution Name</label>
+                        <input type="text" name="institution_name" class="form-control form-control-lg bg-light border-0 shadow-sm" value="{{ settings.institution_name }}" style="font-size: 0.95rem;" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label fw-semibold text-muted small text-uppercase" style="letter-spacing: 0.5px;">Academic Year</label>
+                        <select name="academic_year" class="form-select form-select-lg bg-light border-0 shadow-sm" style="font-size: 0.95rem;">
+                            <option value="2023 - 2024" {% if settings.academic_year == "2023 - 2024" %}selected{% endif %}>2023 - 2024</option>
+                            <option value="2024 - 2025" {% if settings.academic_year == "2024 - 2025" %}selected{% endif %}>2024 - 2025</option>
+                            <option value="2025 - 2026" {% if settings.academic_year == "2025 - 2026" %}selected{% endif %}>2025 - 2026</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label fw-semibold text-muted small text-uppercase" style="letter-spacing: 0.5px;">Official Email Address</label>
+                        <input type="email" name="official_email" class="form-control form-control-lg bg-light border-0 shadow-sm" value="{{ settings.official_email }}" style="font-size: 0.95rem;" required>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label fw-semibold text-muted small text-uppercase" style="letter-spacing: 0.5px;">Institution Address</label>
+                        <textarea name="institution_address" class="form-control form-control-lg bg-light border-0 shadow-sm" rows="3" style="font-size: 0.95rem;" required>{{ settings.institution_address }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appearance Settings Box -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="appearance">
+            <h5 class="fw-bold border-bottom pb-3 mb-4 text-dark"><i class="fas fa-paint-brush text-info me-2"></i> Appearance & Portal</h5>
+            
+            <div class="row g-4 mb-4 pb-3 border-bottom">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark mb-1">Theme Color</label>
+                    <p class="text-muted small mb-2">Select the primary accent color for the dashboard.</p>
+                    <select name="theme_color" class="form-select bg-light border-0 shadow-sm">
+                        <option value="indigo" {% if settings.theme_color == 'indigo' %}selected{% endif %}>Indigo / Primary</option>
+                        <option value="sapphire" {% if settings.theme_color == 'sapphire' %}selected{% endif %}>Sapphire Blue</option>
+                        <option value="emerald" {% if settings.theme_color == 'emerald' %}selected{% endif %}>Emerald Green</option>
+                        <option value="slate" {% if settings.theme_color == 'slate' %}selected{% endif %}>Slate Dark</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Enable Student Portal</h6>
+                    <p class="text-muted small mb-0">Allow students to log in and view their attendance and marks.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="enable_student_portal" {% if settings.enable_student_portal %}checked{% endif %}>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Settings Box -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="notifications">
+            <h5 class="fw-bold border-bottom pb-3 mb-4 text-dark"><i class="fas fa-bell text-warning me-2"></i> Notifications</h5>
+            
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Automated Email Notifications</h6>
+                    <p class="text-muted small mb-0">Completely block or allow outgoing system emails.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="automated_email_notifications" {% if settings.automated_email_notifications %}checked{% endif %}>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Notify Absences</h6>
+                    <p class="text-muted small mb-0">Send daily absent alerts automatically to parents at 10:00 AM.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="notify_absences" {% if settings.notify_absences %}checked{% endif %}>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Notify Fee Dues</h6>
+                    <p class="text-muted small mb-0">Send reminders 3 days before fee deadlines.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="notify_fee_dues" {% if settings.notify_fee_dues %}checked{% endif %}>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Notify Exam Results</h6>
+                    <p class="text-muted small mb-0">Send an email when a student's marks are published.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="notify_exam_results" {% if settings.notify_exam_results %}checked{% endif %}>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings Box -->
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" id="security">
+            <h5 class="fw-bold border-bottom pb-3 mb-4 text-dark"><i class="fas fa-shield-alt text-danger me-2"></i> Security</h5>
+            
+            <div class="row g-4 mb-4 pb-3 border-bottom">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark mb-1">Session Timeout (Minutes)</label>
+                    <p class="text-muted small mb-2">Auto-logout idle users.</p>
+                    <input type="number" name="session_timeout" class="form-control bg-light border-0 shadow-sm" value="{{ settings.session_timeout }}" min="5" max="120">
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Enforce Strong Passwords</h6>
+                    <p class="text-muted small mb-0">Require min 8 chars, numbers, and symbols for all accounts.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="enforce_strong_passwords" {% if settings.enforce_strong_passwords %}checked{% endif %}>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Maintenance Mode</h6>
+                    <p class="text-muted small mb-0">Lock the system for non-admins for scheduled maintenance.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %}>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backups Settings Box -->
+        <div class="card border-0 shadow-sm rounded-4 p-4" id="backups">
+            <h5 class="fw-bold border-bottom pb-3 mb-4 text-dark"><i class="fas fa-database text-success me-2"></i> Database Backups</h5>
+            
+            <div class="row g-4 mb-4 pb-3 border-bottom">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold text-dark mb-1">Backup Frequency</label>
+                    <p class="text-muted small mb-2">How often should automated backups run?</p>
+                    <select name="backup_frequency" class="form-select bg-light border-0 shadow-sm">
+                        <option value="daily" {% if settings.backup_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                        <option value="weekly" {% if settings.backup_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                        <option value="monthly" {% if settings.backup_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark">Enable Automated Backups</h6>
+                    <p class="text-muted small mb-0">Automatically capture off-site database backups.</p>
+                </div>
+                <div class="form-check form-switch fs-4">
+                    <input class="form-check-input" type="checkbox" role="switch" name="auto_backup_enabled" {% if settings.auto_backup_enabled %}checked{% endif %}>
+                </div>
+            </div>
+        </div>
+
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Styling for settings panel switch */
+    .form-check-input:checked {
+        background-color: #10b981;
+        border-color: #10b981;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+    }
+    .form-control:focus, .form-select:focus {
+        background-color: #fff !important;
+        border: 2px solid var(--primary) !important;
+        box-shadow: 0 4px 15px rgba(79, 70, 229, 0.1) !important;
+    }
+</style>
+{% endblock %}

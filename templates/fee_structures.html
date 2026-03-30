@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Fee Structures{% endblock %}
+
+{% block content %}
+<style>
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .filter-section { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-bottom: 2rem; }
+    .structure-card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease; }
+    .structure-card:hover { transform: translateY(-2px); }
+    .structure-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+    .structure-name { font-size: 1.25rem; font-weight: 600; color: #1f2937; }
+    .structure-amount { font-size: 1.5rem; font-weight: 700; color: #10b981; }
+    .structure-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .detail-item { background: #f9fafb; padding: 0.75rem; border-radius: 0.5rem; }
+    .detail-label { font-size: 0.8rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem; }
+    .detail-value { font-weight: 600; color: #1f2937; }
+    .status-badge { padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 600; }
+    .status-active { background: #d1fae5; color: #065f46; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+    .card-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+</style>
+
+<div class="action-bar">
+    <h2><i class="fas fa-cogs"></i> Fee Structures</h2>
+    <a href="{% url 'fee_structure_create' %}" class="btn btn-success"><i class="fas fa-plus"></i> Add Structure</a>
+</div>
+
+<div class="filter-section">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="class" class="form-label"><i class="fas fa-school"></i> Filter by Class:</label>
+            <select name="class" id="class" class="form-select">
+                <option value="">All Classes</option>
+                {% for class_obj in classes %}
+                <option value="{{ class_obj.id }}" {% if request.GET.class == class_obj.id|stringformat:"s" %}selected{% endif %}>
+                    {{ class_obj }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="category" class="form-label"><i class="fas fa-tags"></i> Filter by Category:</label>
+            <select name="category" id="category" class="form-select">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
+            <a href="{% url 'fee_structures' %}" class="btn btn-secondary"><i class="fas fa-times"></i> Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    {% for structure in fee_structures %}
+    <div class="col-md-6">
+        <div class="structure-card">
+            <div class="structure-header">
+                <div>
+                    <div class="structure-name">{{ structure.name }}</div>
+                    <div class="text-muted">{{ structure.category.name }}</div>
+                </div>
+                <div class="structure-amount">₹{{ structure.amount|floatformat:0 }}</div>
+            </div>
+
+            <div class="structure-details">
+                <div class="detail-item">
+                    <div class="detail-label">Class</div>
+                    <div class="detail-value">{{ structure.class_section }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Fee Type</div>
+                    <div class="detail-value">{{ structure.get_fee_type_display }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Frequency</div>
+                    <div class="detail-value">{{ structure.get_frequency_display }}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Due Date</div>
+                    <div class="detail-value">{{ structure.due_date|date:"M d, Y" }}</div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="status-badge {% if structure.is_active %}status-active{% else %}status-inactive{% endif %}">
+                    {% if structure.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+                <div class="card-actions">
+                    <a href="{% url 'fee_structure_update' structure.pk %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'fee_structure_delete' structure.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No Fee Structures Found</h4>
+            <p class="text-muted">Start by creating your first fee structure.</p>
+            <a href="{% url 'fee_structure_create' %}" class="btn btn-primary">Create First Structure</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.class %}&class={{ request.GET.class }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Previous</a></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if request.GET.class %}&class={{ request.GET.class }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.class %}&class={{ request.GET.class }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+{% endblock %}

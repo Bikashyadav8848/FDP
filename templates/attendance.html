@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Management - Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-clipboard-user text-info me-2"></i> Attendance Records</h2>
+        <p class="text-muted mb-0">Record daily attendance, evaluate absences, and track student presence.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'bulk_attendance' %}" class="btn btn-outline-primary rounded-pill fw-semibold px-4 shadow-sm">
+            <i class="fas fa-users-cog me-2"></i> Bulk Mark
+        </a>
+        <a href="{% url 'attendance_add' %}" class="btn btn-primary shadow-sm px-4 rounded-pill fw-semibold">
+            <i class="fas fa-plus me-2"></i> Mark Attendance
+        </a>
+    </div>
+</div>
+
+{% if attendances %}
+<!-- Attendance KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width:48px; height:48px; background:rgba(16,185,129,0.1); color:#10b981; font-size:1.5rem;">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ present_count }}</h3>
+                    <small class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Present Today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width:48px; height:48px; background:rgba(239,68,68,0.1); color:#ef4444; font-size:1.5rem;">
+                    <i class="fas fa-user-times"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ absent_count }}</h3>
+                    <small class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Absent Today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width:48px; height:48px; background:rgba(245,158,11,0.1); color:#f59e0b; font-size:1.5rem;">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ leave_count }}</h3>
+                    <small class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">On Leave</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100 kpi-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-3 d-flex align-items-center justify-content-center me-3" style="width:48px; height:48px; background:rgba(99,102,241,0.1); color:#6366f1; font-size:1.5rem;">
+                    <i class="fas fa-list-ul"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ total_records }}</h3>
+                    <small class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Total Records</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="card-header bg-white border-bottom py-3">
+        <form method="get" class="row g-2 align-items-center m-0">
+            <div class="col-md-4 position-relative">
+                <i class="fas fa-search position-absolute text-muted" style="top:50%; transform:translateY(-50%); left:15px;"></i>
+                <input type="text" name="student" class="form-control rounded-pill ps-5 bg-light border-0" placeholder="Search by student name..." value="{{ request.GET.student }}">
+            </div>
+            <div class="col-md-3 ms-auto">
+                <input type="date" name="date_from" class="form-control rounded-pill bg-light border-0" title="From Date" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="date_to" class="form-control rounded-pill bg-light border-0" title="To Date" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-md-2 d-flex gap-2 justify-content-end">
+                <button type="submit" class="btn btn-primary rounded-pill px-3 fw-semibold"><i class="fas fa-filter"></i></button>
+                <a href="{% url 'attendance' %}" class="btn btn-light border rounded-pill px-3 fw-semibold text-muted" title="Clear Filters"><i class="fas fa-times"></i></a>
+            </div>
+        </form>
+    </div>
+    
+    {% if attendances %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Student</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Date</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Status</th>
+                    <th class="pe-4 border-0 text-uppercase fw-bold text-muted text-end" style="font-size:0.75rem; letter-spacing:0.5px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attendance in attendances %}
+                <tr>
+                    <td class="ps-4 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm" style="width:40px;height:40px; font-size:1rem;">
+                                {{ attendance.student.name|make_list|first|upper }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold" style="color:var(--text-main);">{{ attendance.student.name }}</h6>
+                                <small class="text-muted">Student ID: {{ attendance.student.roll_number }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="fw-semibold text-dark"><i class="far fa-calendar-alt text-muted me-2"></i>{{ attendance.date|date:"d M, Y" }}</span><br>
+                        <small class="text-muted">{{ attendance.date|date:"l" }}</small>
+                    </td>
+                    <td>
+                        {% if attendance.status == 'Present' %}
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill fw-semibold border border-success-subtle shadow-sm">
+                                <i class="fas fa-check-circle me-1"></i> Present
+                            </span>
+                        {% elif attendance.status == 'Absent' %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill fw-semibold border border-danger-subtle shadow-sm">
+                                <i class="fas fa-times-circle me-1"></i> Absent
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill fw-semibold border border-warning-subtle shadow-sm">
+                                <i class="fas fa-clock me-1"></i> {{ attendance.status }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="btn-group shadow-sm rounded-pill">
+                            <a href="{% url 'attendance_edit' attendance.pk %}" class="btn btn-light btn-sm text-primary px-3 border-end" title="Edit"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'attendance_delete' attendance.pk %}" class="btn btn-light btn-sm text-danger px-3" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted fw-semibold" style="font-size:0.85rem;">Showing all filtering records</span>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="display-1 text-muted mb-3 opacity-25"><i class="fas fa-clipboard-check"></i></div>
+        <h4 class="fw-bold text-dark">No Records Found</h4>
+        <p class="text-muted mb-4 px-4">There are currently no attendance records matching your criteria. Be sure to check your date filters or start adding new records.</p>
+        <a href="{% url 'attendance_add' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow"><i class="fas fa-plus me-2"></i> Mark First Attendance</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

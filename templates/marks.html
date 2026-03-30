@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Exam Marks - Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-chart-bar text-danger me-2"></i> Exam Marks</h2>
+        <p class="text-muted mb-0">Record, manage, and evaluate student academic progress and grades.</p>
+    </div>
+    <a href="{% url 'marks_add' %}" class="btn btn-danger shadow-sm px-4 rounded-pill fw-semibold">
+        <i class="fas fa-plus me-2"></i> Add Marks Record
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+        <div class="search-box position-relative" style="width: 300px;">
+            <i class="fas fa-search position-absolute text-muted" style="top:50%; transform:translateY(-50%); left:15px;"></i>
+            <input type="text" class="form-control rounded-pill ps-5 bg-light border-0" placeholder="Search by student or exam...">
+        </div>
+        <div>
+            <button class="btn btn-light rounded-pill px-3 shadow-none border fw-semibold"><i class="fas fa-filter me-1 text-muted"></i> Filter</button>
+            <button class="btn btn-light rounded-pill px-3 shadow-none border ms-2 fw-semibold"><i class="fas fa-download me-1 text-muted"></i> Export</button>
+        </div>
+    </div>
+    
+    {% if marks %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Student</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Exam Name</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Subject</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Score</th>
+                    <th class="pe-4 border-0 text-uppercase fw-bold text-muted text-end" style="font-size:0.75rem; letter-spacing:0.5px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mark in marks %}
+                <tr>
+                    <td class="ps-4 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar bg-danger bg-opacity-75 text-white rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm" style="width:40px;height:40px; font-size:1rem;">
+                                {{ mark.student.name|make_list|first|upper }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold" style="color:var(--text-main);">{{ mark.student.name }}</h6>
+                                <small class="text-muted">Student ID: {{ mark.student.roll_number }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="fw-semibold">{{ mark.exam_name }}</span></td>
+                    <td>
+                        <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-semibold border shadow-sm">
+                            <i class="fas fa-book text-muted me-1"></i> {{ mark.subject.name|default:mark.subject }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if mark.marks >= 80 %}
+                            <span class="badge bg-success text-white px-3 py-2 rounded-pill fw-bold shadow-sm fs-6">
+                                {{ mark.marks }}/{{ mark.out_of }}
+                            </span>
+                        {% elif mark.marks >= 60 %}
+                            <span class="badge bg-primary text-white px-3 py-2 rounded-pill fw-bold shadow-sm fs-6">
+                                {{ mark.marks }}/{{ mark.out_of }}
+                            </span>
+                        {% elif mark.marks >= 40 %}
+                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold shadow-sm fs-6">
+                                {{ mark.marks }}/{{ mark.out_of }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger text-white px-3 py-2 rounded-pill fw-bold shadow-sm fs-6">
+                                {{ mark.marks }}/{{ mark.out_of }}
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="btn-group shadow-sm rounded-pill">
+                            <a href="{% url 'marks_edit' mark.pk %}" class="btn btn-light btn-sm text-primary px-3 border-end" title="Edit"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'marks_delete' mark.pk %}" class="btn btn-light btn-sm text-danger px-3" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted fw-semibold" style="font-size:0.85rem;">Showing all {{ marks|length }} records</span>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="display-1 text-muted mb-3 opacity-25"><i class="fas fa-file-invoice"></i></div>
+        <h4 class="fw-bold text-dark">No Marks Found</h4>
+        <p class="text-muted mb-4 px-4">There are currently no exam marks recorded. Add marks to evaluate student performance.</p>
+        <a href="{% url 'marks_add' %}" class="btn btn-danger rounded-pill px-4 py-2 fw-semibold shadow"><i class="fas fa-plus me-2"></i> Add First Record</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

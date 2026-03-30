@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Students Directory - Student Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-user-graduate text-primary me-2"></i> Students Directory</h2>
+        <p class="text-muted mb-0">Manage all student records, view details, and admit new students.</p>
+    </div>
+    <a href="{% url 'student_add' %}" class="btn btn-primary shadow-sm px-4 rounded-pill fw-semibold">
+        <i class="fas fa-plus me-2"></i> Admit Student
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+    <div class="card-header bg-white border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+        <div class="search-box position-relative" style="width: 300px;">
+            <i class="fas fa-search position-absolute text-muted" style="top:50%; transform:translateY(-50%); left:15px;"></i>
+            <input type="text" class="form-control rounded-pill ps-5 bg-light border-0" placeholder="Search students...">
+        </div>
+        <div>
+            <button class="btn btn-light rounded-pill px-3 shadow-none border fw-semibold"><i class="fas fa-filter me-1 text-muted"></i> Filter</button>
+            <button class="btn btn-light rounded-pill px-3 shadow-none border ms-2 fw-semibold"><i class="fas fa-download me-1 text-muted"></i> Export</button>
+        </div>
+    </div>
+    
+    {% if students %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Profile</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Email Address</th>
+                    <th class="border-0 text-uppercase fw-bold text-muted" style="font-size:0.75rem; letter-spacing:0.5px;">Roll No.</th>
+                    <th class="pe-4 border-0 text-uppercase fw-bold text-muted text-end" style="font-size:0.75rem; letter-spacing:0.5px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td class="ps-4 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm" style="width:42px;height:42px; font-size:1.1rem;">
+                                {{ student.name|make_list|first|upper }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold"><a href="{% url 'student_detail' student.pk %}" class="text-decoration-none" style="color:var(--text-main);">{{ student.name }}</a></h6>
+                                <small class="text-muted">Enrolled Student</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="text-muted"><i class="far fa-envelope me-2 opacity-50"></i>{{ student.email }}</span></td>
+                    <td>
+                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold border border-primary-subtle shadow-sm flex-wrap">
+                            {{ student.roll_number }}
+                        </span>
+                    </td>
+                    <td class="pe-4 text-end">
+                        <div class="btn-group shadow-sm rounded-pill">
+                            <a href="{% url 'student_edit' student.pk %}" class="btn btn-light btn-sm text-primary px-3 border-end" title="Edit"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'student_delete' student.pk %}" class="btn btn-light btn-sm text-danger px-3" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted fw-semibold" style="font-size:0.85rem;">Showing all {{ students|length }} records</span>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="display-1 text-muted mb-3 opacity-25"><i class="fas fa-users-slash"></i></div>
+        <h4 class="fw-bold text-dark">No Students Found</h4>
+        <p class="text-muted mb-4 px-4">There are currently no students enrolled in the system. Get started by adding the first one!</p>
+        <a href="{% url 'student_add' %}" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow"><i class="fas fa-plus me-2"></i> Admit First Student</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit Student{% else %}Add Student{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-3">
+    <div class="col-lg-10">
+        
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'students' %}" class="btn btn-light rounded-circle shadow-sm me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h3 class="mb-0 fw-bold">{% if object %}Edit Student Profile{% else %}Admit New Student{% endif %}</h3>
+                <p class="text-muted mb-0">{% if object %}Update student information and enrollment details.{% else %}Enter the details below to enroll a new student into the system.{% endif %}</p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-primary text-white p-4 rounded-top-4 border-0 d-flex align-items-center gap-3">
+                <i class="fas fa-user-graduate fs-1 opacity-75"></i>
+                <div>
+                    <h5 class="mb-0 fw-bold">Student Information</h5>
+                    <small class="opacity-75">Fields marked with an asterisk (*) are required.</small>
+                </div>
+            </div>
+            
+            <div class="card-body p-4 p-md-5">
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger rounded-3 mb-4 shadow-sm border-0 d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fs-4 me-3"></i>
+                        <div>
+                            {% for error in form.non_field_errors %}
+                                <div class="fw-semibold">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row g-4 mb-4">
+                        {% for field in form %}
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label fw-semibold text-dark mb-2">
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger ms-1">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                <div class="input-group shadow-sm rounded-3">
+                                    {{ field }}
+                                </div>
+                                
+                                {% if field.errors %}
+                                    <div class="text-danger mt-2 small fw-semibold">
+                                        {% for error in field.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                
+                                {% if field.help_text %}
+                                    <div class="text-muted mt-1 small">{{ field.help_text|safe }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <hr class="text-muted opacity-25 mb-4">
+
+                    <div class="d-flex justify-content-end gap-3">
+                        <a href="{% url 'students' %}" class="btn btn-light border rounded-pill px-4 fw-semibold text-muted">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                            <i class="fas fa-check-circle me-2"></i> {% if object %}Save Changes{% else %}Complete Enrollment{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<style>
+    /* Form specifics */
+    .form-control, .form-select, input, select, textarea {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        background-color: #f9fafb;
+        font-size: 0.95rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+        font-family: inherit;
+    }
+    .form-control:focus, .form-select:focus, input:focus, select:focus, textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        background-color: white;
+        outline: none;
+    }
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+</style>
+{% endblock %}

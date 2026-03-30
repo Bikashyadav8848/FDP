@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Fee Payments{% endblock %}
+
+{% block content %}
+<style>
+    .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .filter-section { background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-bottom: 2rem; }
+    .payment-card { background: white; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
+    .payment-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+    .payment-title { font-size: 1.25rem; font-weight: 600; }
+    .payment-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+    .payment-detail { background: #f9fafb; padding: 0.75rem; border-radius: 0.5rem; }
+    .payment-label { font-size: 0.8rem; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem; }
+    .payment-value { font-weight: 600; color: #1f2937; }
+    .card-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+</style>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <h2 class="mb-1 fw-bold"><i class="fas fa-receipt text-indigo me-2" style="color:var(--primary);"></i> Fee Payments</h2>
+        <p class="text-muted mb-0">Record, track, and manage all student financial transactions.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'fees_dashboard' %}" class="btn btn-light shadow-sm border rounded-pill px-4 fw-semibold text-muted">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+        <a href="{% url 'fee_payment_create' %}" class="btn btn-success shadow-sm rounded-pill px-4 fw-bold">
+            <i class="fas fa-plus-circle me-1"></i> Record Payment
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label fw-bold text-muted small text-uppercase">Student</label>
+                <select name="student" class="form-select bg-light border-0 shadow-sm">
+                    <option value="">All Students</option>
+                    {% for student in students %}
+                    <option value="{{ student.id }}" {% if request.GET.student == student.id|stringformat:"s" %}selected{% endif %}>{{ student.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold text-muted small text-uppercase">From Date</label>
+                <input type="date" name="date_from" class="form-control bg-light border-0 shadow-sm" value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label fw-bold text-muted small text-uppercase">To Date</label>
+                <input type="date" name="date_to" class="form-control bg-light border-0 shadow-sm" value="{{ request.GET.date_to }}">
+            </div>
+            <div class="col-lg-2 col-md-6 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold shadow-sm"><i class="fas fa-filter"></i></button>
+                <a href="{% url 'fee_payments' %}" class="btn btn-light border w-100 rounded-pill fw-semibold text-muted shadow-sm"><i class="fas fa-times"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);">
+            <div class="card-body p-4 text-white d-flex flex-column justify-content-center h-100 relative">
+                <i class="fas fa-coins position-absolute" style="font-size: 8rem; right: -20px; bottom: -20px; opacity: 0.1;"></i>
+                <div class="position-relative z-index-1">
+                    <p class="fw-bold text-white-50 text-uppercase mb-2" style="font-size: 0.8rem; letter-spacing: 1px;">Period Revenue</p>
+                    <h2 class="fw-black mb-1 display-5">₹{{ total_payments|floatformat:0 }}</h2>
+                    <p class="small text-white-75 mb-0 mt-3"><i class="fas fa-info-circle me-1"></i> Based on your current filter criteria.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-9 col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="border-0 text-uppercase fw-bold text-muted ps-4 py-3" style="font-size:0.75rem; letter-spacing:0.5px;">Transaction Details</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted py-3" style="font-size:0.75rem; letter-spacing:0.5px;">Fee Structure</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted py-3" style="font-size:0.75rem; letter-spacing:0.5px;">Amount Paid</th>
+                            <th class="border-0 text-uppercase fw-bold text-muted pe-4 py-3 text-end" style="font-size:0.75rem; letter-spacing:0.5px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if fee_payments %}
+                            {% for payment in fee_payments %}
+                            <tr>
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar-circle bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-flex align-items-center justify-content-center rounded-circle" style="width:42px; height:42px;">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ payment.student_fee.student.name }}</div>
+                                            <div class="text-muted small fw-semibold">
+                                                {{ payment.payment_date|date:"M d, Y" }} <span class="opacity-50 mx-1">•</span> 
+                                                <span class="text-primary">{{ payment.get_payment_method_display }}</span>
+                                                {% if payment.transaction_id %}<span class="opacity-50 mx-1">•</span> Txn: {{ payment.transaction_id }}{% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <div class="fw-semibold text-dark">{{ payment.student_fee.fee_structure.name }}</div>
+                                    <div class="small mt-1">
+                                        {% if payment.student_fee.status == 'paid' %}
+                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1"><i class="fas fa-check-circle me-1"></i> Full Paid</span>
+                                        {% elif payment.student_fee.status == 'partially_paid' %}
+                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2 py-1"><i class="fas fa-adjust me-1"></i> Partial</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <h5 class="fw-black text-success mb-0">₹{{ payment.amount|floatformat:0 }}</h5>
+                                </td>
+                                <td class="pe-4 py-3 text-end">
+                                    <div class="btn-group shadow-sm rounded-pill">
+                                        <a href="{% url 'fee_payment_update' payment.pk %}" class="btn btn-sm btn-light border px-3 text-primary fw-semibold" title="Edit"><i class="fas fa-edit me-1"></i> Edit</a>
+                                        <a href="{% url 'fee_payment_delete' payment.pk %}" class="btn btn-sm btn-light border text-danger" title="Delete"><i class="fas fa-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5">
+                                    <div class="opacity-25 mb-3"><i class="fas fa-receipt fs-1 text-muted"></i></div>
+                                    <h5 class="fw-bold text-dark">No Payments Found</h5>
+                                    <p class="text-muted mb-4">No payment records exist for the selected filters.</p>
+                                    <a href="{% url 'fee_payment_create' %}" class="btn btn-primary rounded-pill shadow-sm px-4 fw-bold"><i class="fas fa-plus-circle me-1"></i> Record Payment</a>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if is_paginated %}
+            <div class="card-footer bg-white border-top p-4 d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination pagination-sm mb-0 shadow-sm rounded-pill overflow-hidden">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link text-primary fw-bold px-3" href="?page={{ page_obj.previous_page_number }}">Prev</a></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link fw-semibold px-3" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link text-primary fw-bold px-3" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<style>
+    .fw-black { font-weight: 900; }
+    .display-5 { font-size: 2.5rem; letter-spacing: -1px; }
+    .pagination .page-item.active .page-link { background-color: var(--primary); border-color: var(--primary); }
+    .pagination .page-link { color: var(--text-main); border: 1px solid #e5e7eb; }
+</style>
+{% endblock %}
