@@ -59,3 +59,13 @@ Once the server is running, open your browser and go to:
 ## 👨‍💻 Powered By
 ✨ **Bikash Kumar Yadav** ✨
 *Modernizing school administration with Django & Python*
+
+---
+
+## 👥 Contributors
+- **MD Majid Khan**
+- **Bikesh Yadav**
+- **Raj Gimbhal**
+- **Kishor Shah**
+- **Aksh Koli**
+
